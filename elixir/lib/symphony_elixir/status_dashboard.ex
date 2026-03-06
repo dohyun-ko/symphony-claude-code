@@ -1035,6 +1035,23 @@ defmodule SymphonyElixir.StatusDashboard do
 
   defp map_value(_map, _keys), do: nil
 
+  defp extract_assistant_text(payload) when is_map(payload) do
+    message = Map.get(payload, "message") || Map.get(payload, :message)
+
+    content =
+      case message do
+        %{"content" => [%{"text" => text} | _]} when is_binary(text) -> text
+        %{content: [%{text: text} | _]} when is_binary(text) -> text
+        _ -> nil
+      end
+
+    if content do
+      content |> String.trim() |> String.slice(0, 80)
+    end
+  end
+
+  defp extract_assistant_text(_payload), do: nil
+
   defp integer_like?(value) when is_integer(value), do: true
   defp integer_like?(_value), do: false
 
@@ -1147,6 +1164,32 @@ defmodule SymphonyElixir.StatusDashboard do
   defp humanize_codex_event(:turn_failed, _message, payload), do: humanize_codex_method("turn/failed", payload)
   defp humanize_codex_event(:turn_cancelled, _message, _payload), do: "turn cancelled"
   defp humanize_codex_event(:malformed, _message, _payload), do: "malformed JSON event from codex"
+
+  # Claude Code events
+  defp humanize_codex_event(:assistant_message, _message, payload) do
+    content = extract_assistant_text(payload)
+    if content, do: "assistant: #{content}", else: "assistant responding"
+  end
+
+  defp humanize_codex_event(:tool_use, _message, payload) do
+    tool_name = map_value(payload, ["name", :name, "tool_name", :tool_name])
+    if tool_name, do: "tool: #{tool_name}", else: "tool call"
+  end
+
+  defp humanize_codex_event(:tool_result, _message, _payload), do: "tool result received"
+  defp humanize_codex_event(:turn_completed, _message, payload) do
+    cost = map_value(payload, ["total_cost_usd", :cost_usd])
+    turns = map_value(payload, ["num_turns", :num_turns])
+
+    parts = ["turn completed"]
+    parts = if turns, do: parts ++ ["#{turns} turns"], else: parts
+    parts = if cost, do: parts ++ ["$#{cost}"], else: parts
+    Enum.join(parts, ", ")
+  end
+
+  defp humanize_codex_event(:notification, _message, _payload), do: "notification"
+  defp humanize_codex_event(:rate_limit, _message, _payload), do: "rate limited"
+
   defp humanize_codex_event(_event, _message, _payload), do: nil
 
   defp unwrap_codex_message_payload(%{} = message) do

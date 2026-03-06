@@ -28,7 +28,7 @@ defmodule SymphonyElixir.Config do
   @default_max_concurrent_agents 10
   @default_agent_max_turns 20
   @default_max_retry_backoff_ms 300_000
-  @default_codex_command "codex app-server"
+  @default_codex_command "CLAUDECODE= claude -p --output-format stream-json --verbose --dangerously-skip-permissions --max-turns 50"
   @default_codex_turn_timeout_ms 3_600_000
   @default_codex_read_timeout_ms 5_000
   @default_codex_stall_timeout_ms 300_000
@@ -366,8 +366,7 @@ defmodule SymphonyElixir.Config do
     with {:ok, _workflow} <- current_workflow(),
          :ok <- require_tracker_kind(),
          :ok <- require_linear_token(),
-         :ok <- require_linear_project(),
-         :ok <- require_valid_codex_runtime_settings() do
+         :ok <- require_linear_project() do
       require_codex_command()
     end
   end
@@ -428,13 +427,6 @@ defmodule SymphonyElixir.Config do
       :ok
     else
       {:error, :missing_codex_command}
-    end
-  end
-
-  defp require_valid_codex_runtime_settings do
-    case codex_runtime_settings() do
-      {:ok, _settings} -> :ok
-      {:error, reason} -> {:error, reason}
     end
   end
 

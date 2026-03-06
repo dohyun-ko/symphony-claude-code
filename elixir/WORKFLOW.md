@@ -1,8 +1,9 @@
 ---
 tracker:
   kind: linear
-  project_slug: "symphony-0c79b11b75ea"
+  project_slug: "remove-desk-todo-63b9a77de4f8"
   active_states:
+    - Triage
     - Todo
     - In Progress
     - Merging
@@ -26,14 +27,10 @@ hooks:
   before_remove: |
     cd elixir && mise exec -- mix workspace.before_remove
 agent:
-  max_concurrent_agents: 10
-  max_turns: 20
+  max_concurrent_agents: 3
+  max_turns: 5
 codex:
-  command: codex --config shell_environment_policy.inherit=all --config model_reasoning_effort=xhigh --model gpt-5.3-codex app-server
-  approval_policy: never
-  thread_sandbox: workspace-write
-  turn_sandbox_policy:
-    type: workspaceWrite
+  command: "CLAUDECODE= claude -p --output-format stream-json --verbose --dangerously-skip-permissions --max-turns 50"
 ---
 
 You are working on a Linear ticket `{{ issue.identifier }}`
